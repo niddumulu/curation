@@ -1,4 +1,4 @@
-# curation
+# Hive Curation Tool
 🔍 Apa itu Hive Curation Tool?
 Hive Curation Tool adalah alat bantu untuk memberikan upvote (vote positif) ke postingan orang lain melalui beberapa akun sekaligus — biasanya sebagai bagian dari sistem curation reward di Hive.
 
