@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hive Curation Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@hiveio/hive-js/dist/hive.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: #f8f9fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 20px;
+      padding: 30px;
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #9D4242;
+      font-size: 24px;
+      margin-bottom: 30px;
+    }
+
+    label {
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: block;
+      color: #444;
+    }
+
+    input[type="text"], input[type="number"], input[type="file"], button {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      background-color: #f1f1f1;
+    }
+
+    button {
+      background-color: #9D4242;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #7c3333;
+    }
+
+    #log {
+      margin-top: 20px;
+      background: #f1f1f1;
+      padding: 10px;
+      border-radius: 10px;
+      height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 14px;
+      color: #333;
+    }
+
+    /* Responsiveness for smaller screens */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 20px;
+      }
+
+      .container {
+        padding: 20px;
+      }
+
+      input[type="text"], input[type="number"], input[type="file"], button {
+        font-size: 14px;
+        padding: 10px;
+      }
+
+      #log {
+        height: 150px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 18px;
+      }
+
+      .container {
+        padding: 15px;
+      }
+
+      input[type="text"], input[type="number"], input[type="file"], button {
+        font-size: 12px;
+        padding: 8px;
+      }
+
+      #log {
+        height: 120px;
+      }
+    }
+  </style>
+  <script>
+    hive.api.setOptions({ url: 'https://anyx.io' });
+    hive.config.set('address_prefix', 'STM');
+    hive.config.set('chain_id', 'beeab0de00000000000000000000000000000000000000000000000000000000');
+    hive.config.set('alternative_api_endpoints', ['https://api.hive.blog', 'https://anyx.io']);
+  </script>
+</head>
+<body>
+
+<div class="container">
+  <h1>Hive Curation Tool</h1>
+
+  <label for="permlink">Post Link</label>
+  <input type="text" id="permlink" placeholder="https://peakd.com/@author/permlink">
+
+  <label for="weight">Vote Weight (0-100)</label>
+  <input type="number" id="weight" placeholder="e.g. 50">
+
+  <label for="jsonFile">Load akun dari file JSON</label>
+  <input type="file" id="jsonFile" accept=".json">
+
+  <button onclick="curate()">Mulai Vote</button>
+
+  <div id="log"></div>
+</div>
+
+<script>
+  function log(message) {
+    const logBox = document.getElementById('log');
+    logBox.innerHTML += message + "<br>";
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  let votersList = [];
+
+  document.getElementById('jsonFile').addEventListener('change', function (event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        votersList = data;
+        log(`✅ ${data.length} akun berhasil dimuat dari file.`);
+      } catch (err) {
+        alert("❌ Gagal membaca file JSON: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  function curate() {
+    const link = document.getElementById('permlink').value.trim();
+    const weightInput = parseFloat(document.getElementById('weight').value);
+
+    if (!link || isNaN(weightInput) || votersList.length === 0) {
+      alert("Mohon isi semua data dengan benar dan pastikan file akun sudah dimuat.");
+      return;
+    }
+
+    const pathArray = link.split('/');
+    if (pathArray.length < 6) {
+      alert("Link post tidak valid!");
+      return;
+    }
+
+    const permlink = pathArray[5];
+    const author = pathArray[4].replace('@', '');
+    const weight = Math.round(weightInput * 100);
+
+    votersList.forEach((account, index) => {
+      const voter = account.username;
+      const wif = account.wif;
+
+      hive.broadcast.vote(wif, voter, author, permlink, weight, function (err, result) {
+        if (err) {
+          log(`❌ ${voter} gagal vote: ${err.message}`);
+        } else {
+          log(`✅ ${voter} berhasil vote`);
+        }
+      });
+    });
+  }
+</script>
+
+</body>
+</html>
