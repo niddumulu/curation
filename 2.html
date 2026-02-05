@@ -3,18 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Hive Batch Upvote</title>
 
-<title>Hive Batch Upvote Tool</title>
+<script src="https://cdn.jsdelivr.net/npm/@hiveio/hive-js/dist/hive.min.js"></script>
+<script>
+  hive.api.setOptions({ url: 'https://api.hive.blog' });
+  hive.config.set('address_prefix','STM');
+  hive.config.set('chain_id','beeab0de00000000000000000000000000000000000000000000000000000000');
+</script>
 
 <style>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
   padding: 16px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: system-ui, sans-serif;
   background: #f4f4f4;
 }
 
@@ -27,13 +31,8 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,.15);
 }
 
-/* ===== HEADER ===== */
-h2 {
-  text-align: center;
-  margin: 0 0 14px;
-}
+h2 { text-align: center; margin-bottom: 12px; }
 
-/* ===== TOOLS BAR ===== */
 .tools-bar {
   display: flex;
   gap: 10px;
@@ -42,7 +41,7 @@ h2 {
 
 .tool-btn {
   flex: 1;
-  padding: 12px 0;
+  padding: 12px;
   font-size: 16px;
   font-weight: 600;
   border-radius: 8px;
@@ -50,17 +49,9 @@ h2 {
   cursor: pointer;
 }
 
-.export {
-  background: #e3f2fd;
-  color: #1565c0;
-}
+.export { background: #e3f2fd; color: #1565c0; }
+.import { background: #e8f5e9; color: #2e7d32; }
 
-.import {
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-
-/* ===== INPUTS ===== */
 label {
   font-size: 14px;
   font-weight: 600;
@@ -68,17 +59,15 @@ label {
   display: block;
 }
 
-input[type=text],
-input[type=password] {
+input[type=text], input[type=password] {
   width: 100%;
   padding: 12px;
+  font-size: 16px;
   margin-top: 6px;
-  font-size: 16px; /* prevent zoom */
   border-radius: 8px;
   border: 1px solid #ccc;
 }
 
-/* ===== ADD ACCOUNT ===== */
 .add-btn {
   margin-top: 14px;
   width: 100%;
@@ -92,24 +81,17 @@ input[type=password] {
   cursor: pointer;
 }
 
-/* ===== ACCOUNT LIST ===== */
-.account-list {
-  margin-top: 18px;
-}
-
 .account {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 8px;
   background: #f7f7f7;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
 }
 
-.account input[type=checkbox] {
-  transform: scale(1.2);
-}
+.account input { transform: scale(1.2); }
 
 .account-name {
   flex: 1;
@@ -123,9 +105,8 @@ input[type=password] {
   color: #777;
 }
 
-/* ===== VOTE ===== */
 .vote-btn {
-  margin-top: 18px;
+  margin-top: 16px;
   width: 100%;
   padding: 16px;
   font-size: 17px;
@@ -133,16 +114,35 @@ input[type=password] {
   border-radius: 12px;
   border: none;
   background: #ff5722;
-  color: white;
+  color: #fff;
   cursor: pointer;
 }
 
-/* ===== NOTE ===== */
+/* PROGRESS */
+.progress-wrap {
+  margin-top: 14px;
+}
+
+.progress {
+  width: 100%;
+  height: 10px;
+  background: #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #4caf50;
+  transition: width .3s;
+}
+
 .note {
-  text-align: center;
   font-size: 12px;
+  text-align: center;
+  margin-top: 8px;
   color: #666;
-  margin-top: 12px;
 }
 </style>
 </head>
@@ -152,91 +152,108 @@ input[type=password] {
 <div class="container">
   <h2>Hive Batch Upvote</h2>
 
-  <!-- TOOLS -->
   <div class="tools-bar">
     <button class="tool-btn export" onclick="exportAccounts()">Export</button>
     <button class="tool-btn import" onclick="document.getElementById('importFile').click()">Import</button>
     <input type="file" id="importFile" hidden onchange="importAccounts(event)">
   </div>
 
-  <!-- ADD ACCOUNT -->
   <label>Username</label>
-  <input type="text" id="username" placeholder="username">
+  <input id="username" type="text">
 
   <label>Posting Private Key</label>
-  <input type="password" id="postingKey" placeholder="5K...">
+  <input id="postingKey" type="password">
 
   <button class="add-btn" onclick="addAccount()">Tambah Akun</button>
 
-  <!-- ACCOUNT LIST -->
-  <div class="account-list" id="accountList"></div>
+  <div id="accountList"></div>
 
-  <!-- POST LINK -->
   <label>Link Post Hive</label>
-  <input type="text" id="postLink" placeholder="https://ecency.com/@author/permlink">
+  <input id="postLink" type="text">
 
-  <!-- VOTE -->
   <button class="vote-btn" onclick="voteAll()">Vote Semua Akun</button>
 
-  <div class="note">
-    Data disimpan lokal di browser Anda
+  <div class="progress-wrap">
+    <div class="progress">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div id="globalStatus" class="note"></div>
   </div>
+
+  <div class="note">Delay antar akun: ±3 detik</div>
 </div>
 
 <script>
 let accounts = JSON.parse(localStorage.getItem('hive_accounts') || '[]');
+const DELAY = 3000;
 
-function save() {
-  localStorage.setItem('hive_accounts', JSON.stringify(accounts));
-}
+function save(){ localStorage.setItem('hive_accounts', JSON.stringify(accounts)); }
 
-function render() {
+function render(){
   const list = document.getElementById('accountList');
   list.innerHTML = '';
-  accounts.forEach((a, i) => {
+  accounts.forEach((a,i)=>{
     list.innerHTML += `
       <div class="account">
-        <input type="checkbox" checked>
+        <input type="checkbox" checked data-i="${i}">
         <div class="account-name">@${a.username}</div>
-        <div class="status">ready</div>
+        <div class="status" id="st-${i}">ready</div>
       </div>`;
   });
 }
 
-function addAccount() {
-  const u = username.value.trim();
-  const k = postingKey.value.trim();
-  if (!u || !k) return;
-
-  accounts.push({ username: u, key: k });
-  save();
-  render();
-  username.value = '';
-  postingKey.value = '';
+function addAccount(){
+  if(!username.value || !postingKey.value) return;
+  accounts.push({username: username.value, key: postingKey.value});
+  save(); render();
+  username.value=''; postingKey.value='';
 }
 
-function exportAccounts() {
-  const blob = new Blob([JSON.stringify(accounts)], { type: 'application/json' });
+function exportAccounts(){
+  const b = new Blob([JSON.stringify(accounts)], {type:'application/json'});
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(b);
   a.download = 'hive-accounts.json';
   a.click();
 }
 
-function importAccounts(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+function importAccounts(e){
   const r = new FileReader();
-  r.onload = () => {
-    accounts = JSON.parse(r.result);
-    save();
-    render();
-  };
-  r.readAsText(file);
+  r.onload = ()=>{ accounts = JSON.parse(r.result); save(); render(); };
+  r.readAsText(e.target.files[0]);
 }
 
-function voteAll() {
-  alert("Logic vote Hive sambungkan di sini 🚀");
+async function voteAll(){
+  const link = postLink.value.trim();
+  if(!link) return;
+
+  const parts = link.split('/');
+  const author = parts[4].replace('@','');
+  const permlink = parts[5];
+
+  const selected = [...document.querySelectorAll('.account input:checked')];
+  let done = 0;
+  document.getElementById('globalStatus').textContent = 'broadcasting...';
+
+  for(const cb of selected){
+    const i = cb.dataset.i;
+    const acc = accounts[i];
+    document.getElementById(`st-${i}`).textContent = 'broadcasting';
+
+    await new Promise(res=>{
+      hive.broadcast.vote(
+        acc.key, acc.username, author, permlink, 10000,
+        (err)=>{
+          document.getElementById(`st-${i}`).textContent = err ? 'failed' : 'success';
+          done++;
+          document.getElementById('progressBar').style.width =
+            Math.round(done/selected.length*100) + '%';
+          setTimeout(res, DELAY);
+        }
+      );
+    });
+  }
+  document.getElementById('globalStatus').textContent = 'done';
 }
 
 render();
