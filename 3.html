@@ -13,131 +13,162 @@ hive.config.set('chain_id','beeab0de00000000000000000000000000000000000000000000
 </script>
 
 <style>
-*{box-sizing:border-box}
-
-body{
-margin:0;
-padding:16px;
-font-family:system-ui;
-background:#f4f4f4;
+* {
+  box-sizing: border-box;
 }
 
-.container{
-max-width:480px;
-margin:auto;
-background:#fff;
-padding:18px;
-border-radius:12px;
-box-shadow:0 4px 12px rgba(0,0,0,.15);
+body {
+  margin: 0;
+  padding: 16px;
+  font-family: system-ui;
+  background: #f4f4f4;
 }
 
-h2{text-align:center}
-
-.tools-bar{
-display:flex;
-gap:8px;
-margin-bottom:12px;
+.container {
+  max-width: 480px;
+  margin: auto;
+  background: #fff;
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
 }
 
-.tool-btn{
-flex:1;
-padding:10px;
-border:none;
-border-radius:8px;
-font-weight:600;
-cursor:pointer;
+h2 {
+  text-align: center;
 }
 
-.export{background:#e3f2fd}
-.import{background:#e8f5e9}
-.selectall{background:#fff3cd}
-
-input{
-width:100%;
-padding:12px;
-margin-top:6px;
-border-radius:8px;
-border:1px solid #ccc;
+.tools-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.add-btn{
-margin-top:12px;
-width:100%;
-padding:14px;
-border:none;
-border-radius:10px;
-background:#4caf50;
-color:white;
-font-weight:700;
-cursor:pointer;
+.tool-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.export { background: #e3f2fd; }
+.import { background: #e8f5e9; }
+.selectall { background: #fff3cd; }
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.add-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: #4caf50;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 /* LIST SCROLL */
-.accountList{
-max-height:220px;
-overflow:auto;
-margin-top:10px;
+.accountList {
+  max-height: 220px;
+  overflow: auto;
+  margin-top: 10px;
 }
 
-.account{
-display:flex;
-align-items:center;
-gap:8px;
-background:#f7f7f7;
-padding:8px;
-border-radius:8px;
-margin-bottom:6px;
+.account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f7f7f7;
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
 }
 
-.account-name{
-flex:1;
-font-weight:600;
-cursor:pointer;
+.account input[type="checkbox"] {
+  flex: 0 0 auto;   /* checkbox tidak melebar */
+  width: 20px;
+  height: 20px;
+  margin: 0;
 }
 
-.delete-btn{
-background:#ff5252;
-color:white;
-border:none;
-padding:6px 8px;
-border-radius:6px;
-cursor:pointer;
-font-size:12px;
+.account-name {
+  flex: 1 1 auto;   /* ambil sisa ruang secara wajar */
+  min-width: 0;     /* penting agar teks wrap di mobile */
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.vote-btn{
-margin-top:14px;
-width:100%;
-padding:16px;
-background:#ff5722;
-color:white;
-border:none;
-border-radius:12px;
-font-weight:800;
-cursor:pointer;
+.delete-btn {
+  flex: 0 0 auto;   /* tombol tetap ukuran aslinya */
+  background: #ff5252;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
 }
 
-.progress{
-width:100%;
-height:10px;
-background:#ddd;
-border-radius:6px;
-margin-top:12px;
-overflow:hidden;
+.vote-btn {
+  margin-top: 14px;
+  width: 100%;
+  padding: 16px;
+  background: #ff5722;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-.progress-bar{
-height:100%;
-width:0%;
-background:#4caf50;
+.progress {
+  width: 100%;
+  height: 10px;
+  background: #ddd;
+  border-radius: 6px;
+  margin-top: 12px;
+  overflow: hidden;
 }
 
-.note{
-font-size:12px;
-text-align:center;
-margin-top:8px;
-color:#666;
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #4caf50;
 }
+
+.note {
+  font-size: 12px;
+  text-align: center;
+  margin-top: 8px;
+  color: #666;
+}
+
+/* MEDIA QUERY MOBILE */
+@media (max-width: 480px) {
+  .account {
+    gap: 4px; /* lebih rapat di mobile */
+  }
+
+  .account input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+
+  .delete-btn {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+}
+
 </style>
 </head>
 
