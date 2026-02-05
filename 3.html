@@ -94,21 +94,21 @@ input {
 }
 
 .account input[type="checkbox"] {
-  flex: 0 0 auto;   /* checkbox tidak melebar */
+  flex: 0 0 auto;
   width: 20px;
   height: 20px;
   margin: 0;
 }
 
 .account-name {
-  flex: 1 1 auto;   /* ambil sisa ruang secara wajar */
-  min-width: 0;     /* penting agar teks wrap di mobile */
+  flex: 1 1 auto;
+  min-width: 0;
   font-weight: 600;
   cursor: pointer;
 }
 
 .delete-btn {
-  flex: 0 0 auto;   /* tombol tetap ukuran aslinya */
+  flex: 0 0 auto;
   background: #ff5252;
   color: white;
   border: none;
@@ -152,10 +152,22 @@ input {
   color: #666;
 }
 
+/* LOG AREA */
+#voteLog {
+  text-align: left;
+  max-height: 150px;
+  overflow: auto;
+  margin-top: 8px;
+  background: #f7f7f7;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
 /* MEDIA QUERY MOBILE */
 @media (max-width: 480px) {
   .account {
-    gap: 4px; /* lebih rapat di mobile */
+    gap: 4px;
   }
 
   .account input[type="checkbox"] {
@@ -168,7 +180,6 @@ input {
     font-size: 11px;
   }
 }
-
 </style>
 </head>
 
@@ -179,10 +190,10 @@ input {
 <h2>Hive Batch Upvote</h2>
 
 <div class="tools-bar">
-<button class="tool-btn export" onclick="exportAccounts()">Export</button>
-<button class="tool-btn import" onclick="importFile.click()">Import</button>
-<button class="tool-btn selectall" onclick="toggleAll()">Toggle All</button>
-<input type="file" id="importFile" hidden onchange="importAccounts(event)">
+  <button class="tool-btn export" onclick="exportAccounts()">Export</button>
+  <button class="tool-btn import" onclick="importFile.click()">Import</button>
+  <button class="tool-btn selectall" onclick="toggleAll()">Toggle All</button>
+  <input type="file" id="importFile" hidden onchange="importAccounts(event)">
 </div>
 
 <input id="username" placeholder="Username">
@@ -197,161 +208,128 @@ input {
 <button class="vote-btn" onclick="voteAll()">Vote Semua Akun</button>
 
 <div class="progress">
-<div id="progressBar" class="progress-bar"></div>
+  <div id="progressBar" class="progress-bar"></div>
 </div>
 
 <div id="globalStatus" class="note"></div>
+<div id="voteLog"></div>
 
 </div>
 
 <script>
-
 let accounts = JSON.parse(localStorage.getItem('hive_accounts')||'[]')
 .map(a=>({enabled:true,...a}));
 
 const DELAY=3000;
 
-function save(){
-localStorage.setItem('hive_accounts',JSON.stringify(accounts));
-}
+function save(){ localStorage.setItem('hive_accounts',JSON.stringify(accounts)); }
 
 function render(){
-accountList.innerHTML='';
-
-accounts.forEach((a,i)=>{
-accountList.innerHTML+=`
-<div class="account">
-
-<input type="checkbox"
-${a.enabled?'checked':''}
-onchange="toggleAccount(${i},this.checked)">
-
-<div class="account-name"
-onclick="editAccount(${i})">
-@${a.username}
-</div>
-
-<button class="delete-btn"
-onclick="deleteAccount(${i})">Del</button>
-
-</div>`;
-});
+  accountList.innerHTML='';
+  accounts.forEach((a,i)=>{
+    accountList.innerHTML+=`
+      <div class="account">
+        <input type="checkbox" ${a.enabled?'checked':''} onchange="toggleAccount(${i},this.checked)">
+        <div class="account-name" onclick="editAccount(${i})">@${a.username}</div>
+        <button class="delete-btn" onclick="deleteAccount(${i})">Del</button>
+      </div>`;
+  });
 }
 
 function addAccount(){
-
-let user=username.value.trim().toLowerCase();
-let key=postingKey.value.trim();
-
-if(!user||!key)return alert("Isi data");
-
-if(accounts.some(a=>a.username===user))
-return alert("Akun sudah ada");
-
-accounts.push({username:user,key,enabled:true});
-save();render();
-
-username.value='';
-postingKey.value='';
+  let user=username.value.trim().toLowerCase();
+  let key=postingKey.value.trim();
+  if(!user||!key)return alert("Isi data");
+  if(accounts.some(a=>a.username===user)) return alert("Akun sudah ada");
+  accounts.push({username:user,key,enabled:true});
+  save(); render();
+  username.value=''; postingKey.value='';
 }
 
-function deleteAccount(i){
-if(!confirm("Hapus akun?"))return;
-accounts.splice(i,1);
-save();render();
-}
+function deleteAccount(i){ if(!confirm("Hapus akun?"))return; accounts.splice(i,1); save(); render(); }
 
 function editAccount(i){
-
-let a=accounts[i];
-
-let newUser=prompt("Edit username",a.username);
-if(!newUser)return;
-
-let newKey=prompt("Edit key",a.key);
-if(!newKey)return;
-
-accounts[i]={username:newUser,key:newKey,enabled:a.enabled};
-
-save();render();
+  let a=accounts[i];
+  let newUser=prompt("Edit username",a.username); if(!newUser)return;
+  let newKey=prompt("Edit key",a.key); if(!newKey)return;
+  accounts[i]={username:newUser,key:newKey,enabled:a.enabled};
+  save(); render();
 }
 
-function toggleAccount(i,state){
-accounts[i].enabled=state;
-save();
-}
+function toggleAccount(i,state){ accounts[i].enabled=state; save(); }
 
-function toggleAll(){
-let state=!accounts.every(a=>a.enabled);
-accounts.forEach(a=>a.enabled=state);
-save();render();
-}
+function toggleAll(){ let state=!accounts.every(a=>a.enabled); accounts.forEach(a=>a.enabled=state); save(); render(); }
 
 function exportAccounts(){
-let blob=new Blob([JSON.stringify(accounts)],{type:'application/json'});
-let a=document.createElement('a');
-a.href=URL.createObjectURL(blob);
-a.download='hive-accounts.json';
-a.click();
+  let blob=new Blob([JSON.stringify(accounts)],{type:'application/json'});
+  let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='hive-accounts.json'; a.click();
 }
 
 function importAccounts(e){
-let r=new FileReader();
-r.onload=()=>{
-accounts=JSON.parse(r.result);
-save();render();
-};
-r.readAsText(e.target.files[0]);
+  let r=new FileReader();
+  r.onload=()=>{ accounts=JSON.parse(r.result); save(); render(); };
+  r.readAsText(e.target.files[0]);
 }
 
 function parseHiveLink(url){
-let m=url.match(/@([^/]+)\/([^/?#]+)/);
-return m?{author:m[1],permlink:m[2]}:null;
+  let m=url.match(/@([^/]+)\/([^/?#]+)/);
+  return m?{author:m[1],permlink:m[2]}:null;
+}
+
+function appendLog(message,status){
+  let color = status==='success'?'green':status==='error'?'red':'orange';
+  let logDiv=document.createElement('div');
+  logDiv.textContent=message;
+  logDiv.style.color=color;
+  logDiv.style.marginBottom='2px';
+  voteLog.appendChild(logDiv);
+  voteLog.scrollTop = voteLog.scrollHeight;
 }
 
 async function voteAll(){
+  let link=postLink.value.trim();
+  let parsed=parseHiveLink(link);
+  if(!parsed) return alert("Link tidak valid");
 
-let link=postLink.value.trim();
-let parsed=parseHiveLink(link);
+  let selected=accounts.map((a,i)=>a.enabled?{acc:a,index:i}:null).filter(Boolean);
+  if(!selected.length) return alert("Tidak ada akun aktif");
 
-if(!parsed)return alert("Link tidak valid");
+  let done=0;
+  progressBar.style.width="0%";
+  globalStatus.textContent="broadcasting...";
+  voteLog.innerHTML=''; // bersihkan log lama
 
-let selected=accounts
-.map((a,i)=>a.enabled?{acc:a,index:i}:null)
-.filter(Boolean);
+  for(let item of selected){
+    let acc=item.acc;
+    await new Promise(res=>{
+      hive.broadcast.vote(
+        acc.key,
+        acc.username,
+        parsed.author,
+        parsed.permlink,
+        10000,
+        (err)=>{
+          done++;
+          progressBar.style.width=Math.round(done/selected.length*100)+"%";
 
-if(!selected.length)return alert("Tidak ada akun aktif");
-
-let done=0;
-progressBar.style.width="0%";
-globalStatus.textContent="broadcasting...";
-
-for(let item of selected){
-
-let acc=item.acc;
-let i=item.index;
-
-await new Promise(res=>{
-hive.broadcast.vote(
-acc.key,
-acc.username,
-parsed.author,
-parsed.permlink,
-10000,
-(err)=>{
-done++;
-progressBar.style.width=
-Math.round(done/selected.length*100)+"%";
-setTimeout(res,DELAY);
-});
-});
-}
-
-globalStatus.textContent="done";
+          if(err){
+            if(err.toString().includes('bandwidth')){
+              appendLog(`@${acc.username} → RC habis`, 'warning');
+            } else {
+              appendLog(`@${acc.username} → Vote gagal`, 'error');
+            }
+          } else {
+            appendLog(`@${acc.username} → Vote berhasil`, 'success');
+          }
+          setTimeout(res,DELAY);
+        }
+      );
+    });
+  }
+  globalStatus.textContent="done";
 }
 
 render();
-
 </script>
 
 </body>
