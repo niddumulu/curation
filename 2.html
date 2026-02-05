@@ -7,9 +7,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@hiveio/hive-js/dist/hive.min.js"></script>
 <script>
-  hive.api.setOptions({ url: 'https://api.hive.blog' });
-  hive.config.set('address_prefix','STM');
-  hive.config.set('chain_id','beeab0de00000000000000000000000000000000000000000000000000000000');
+hive.api.setOptions({ url: 'https://api.hive.blog' });
+hive.config.set('address_prefix','STM');
+hive.config.set('chain_id','beeab0de00000000000000000000000000000000000000000000000000000000');
 </script>
 
 <style>
@@ -19,25 +19,23 @@ body{
   padding:16px;
 }
 .container{
-  max-width:500px;
+  max-width:520px;
   margin:auto;
   background:#fff;
   padding:20px;
   border-radius:10px;
   box-shadow:0 4px 10px rgba(0,0,0,.15);
 }
-h2{
-  text-align:center;
-}
+h2{text-align:center;}
 label{
-  font-size:14px;
   font-weight:bold;
-  display:block;
   margin-top:12px;
+  display:block;
 }
 input{
   width:100%;
-  padding:12px;
+  padding:14px;
+  font-size:16px; /* cegah auto zoom */
   margin-top:6px;
   border-radius:6px;
   border:1px solid #ccc;
@@ -45,38 +43,40 @@ input{
 button{
   width:100%;
   padding:14px;
-  margin-top:16px;
+  margin-top:14px;
   font-size:16px;
   font-weight:bold;
   border:none;
   border-radius:6px;
-  background:#4CAF50;
-  color:#fff;
   cursor:pointer;
 }
-button.secondary{
-  background:#2196F3;
-}
-button.danger{
-  background:#f44336;
-}
+.primary{background:#4CAF50;color:#fff;}
+.secondary{background:#2196F3;color:#fff;}
+.danger{background:#f44336;color:#fff;}
+
 .account{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-top:8px;
-  padding:6px 0;
   border-bottom:1px solid #eee;
+  padding:6px 0;
   font-size:14px;
 }
-.status{
-  font-size:12px;
+.status{font-size:12px;}
+
+.progress-box{
+  margin-top:14px;
 }
+progress{
+  width:100%;
+  height:16px;
+}
+
 .note{
   font-size:12px;
   color:#555;
-  margin-top:12px;
   text-align:center;
+  margin-top:12px;
 }
 </style>
 </head>
@@ -95,6 +95,10 @@ button.danger{
 
 <button class="secondary" onclick="addAccount()">Tambah Akun</button>
 
+<!-- IMPORT EXPORT -->
+<button onclick="exportAccounts()">Export Akun</button>
+<input type="file" id="importFile" accept=".json" onchange="importAccounts()">
+
 <!-- ACCOUNT LIST -->
 <h3>Akun Tersimpan</h3>
 <div id="accountList"></div>
@@ -107,10 +111,18 @@ button.danger{
 <label>Link Post Hive</label>
 <input id="postLink" placeholder="https://ecency.com/@author/permlink">
 
-<button onclick="startBatchVote()">Vote dengan Semua Akun</button>
+<label>Delay Antar Vote (detik)</label>
+<input id="delay" type="number" value="2" min="0">
+
+<button class="primary" onclick="startBatchVote()">Vote dengan Semua Akun</button>
+
+<div class="progress-box">
+  <progress id="progressBar" value="0" max="0"></progress>
+  <div id="progressText"></div>
+</div>
 
 <div class="note">
-Posting key & username disimpan lokal di browser ini.
+Data disimpan lokal di browser ini. Gunakan hanya di device pribadi.
 </div>
 
 </div>
@@ -124,61 +136,90 @@ function saveAccounts(){
 
 function renderAccounts(){
   const list = document.getElementById("accountList");
-  list.innerHTML = "";
-  accounts.forEach((acc, i) => {
-    const div = document.createElement("div");
-    div.className = "account";
-    div.innerHTML = `
+  list.innerHTML="";
+  accounts.forEach((acc,i)=>{
+    const row=document.createElement("div");
+    row.className="account";
+    row.innerHTML=`
       <label>
-        <input type="checkbox" ${acc.enabled ? "checked" : ""} onchange="toggleAccount(${i})">
+        <input type="checkbox" ${acc.enabled?"checked":""} onchange="toggleAccount(${i})">
         @${acc.username}
       </label>
       <span class="status" id="status-${i}">Idle</span>
     `;
-    list.appendChild(div);
+    list.appendChild(row);
   });
 }
 
 function addAccount(){
-  const u = document.getElementById("newUser").value.trim();
-  const k = document.getElementById("newKey").value.trim();
-  if(!u || !k) return;
-
-  accounts.push({username:u, postingKey:k, enabled:true});
-  saveAccounts();
-  renderAccounts();
-
-  document.getElementById("newUser").value="";
-  document.getElementById("newKey").value="";
+  const u=newUser.value.trim();
+  const k=newKey.value.trim();
+  if(!u||!k)return;
+  accounts.push({username:u,postingKey:k,enabled:true});
+  saveAccounts(); renderAccounts();
+  newUser.value=""; newKey.value="";
 }
 
 function toggleAccount(i){
-  accounts[i].enabled = !accounts[i].enabled;
+  accounts[i].enabled=!accounts[i].enabled;
   saveAccounts();
 }
 
 function clearAccounts(){
-  accounts = [];
-  saveAccounts();
-  renderAccounts();
+  accounts=[]; saveAccounts(); renderAccounts();
+}
+
+function exportAccounts(){
+  const blob=new Blob([JSON.stringify(accounts,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="hive_accounts.json";
+  a.click();
+}
+
+function importAccounts(){
+  const file=document.getElementById("importFile").files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(Array.isArray(data)){
+        accounts=data;
+        saveAccounts();
+        renderAccounts();
+      }
+    }catch{}
+  };
+  reader.readAsText(file);
 }
 
 function updateStatus(i,text){
-  const el = document.getElementById("status-"+i);
-  if(el) el.textContent = text;
+  const el=document.getElementById("status-"+i);
+  if(el)el.textContent=text;
 }
 
-async function startBatchVote(){
-  const link = document.getElementById("postLink").value.trim();
-  const p = link.split("/");
-  if(p.length < 6) return;
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
-  const author = p[4].replace("@","");
-  const permlink = p[5];
+async function startBatchVote(){
+  const link=postLink.value.trim();
+  const d=parseInt(delay.value)||0;
+  const p=link.split("/");
+  if(p.length<6)return;
+
+  const author=p[4].replace("@","");
+  const permlink=p[5];
+
+  const active=accounts.filter(a=>a.enabled);
+  progressBar.max=active.length;
+  progressBar.value=0;
+  progressText.textContent=`0 / ${active.length}`;
+
+  let done=0;
 
   for(let i=0;i<accounts.length;i++){
-    const acc = accounts[i];
-    if(!acc.enabled) continue;
+    const acc=accounts[i];
+    if(!acc.enabled)continue;
 
     updateStatus(i,"broadcasting… ⏳");
 
@@ -189,12 +230,18 @@ async function startBatchVote(){
         author,
         permlink,
         10000,
-        (err)=>{
-          updateStatus(i, err ? "failed ❌" : "success ✅");
+        err=>{
+          updateStatus(i,err?"failed ❌":"success ✅");
           resolve();
         }
       );
     });
+
+    done++;
+    progressBar.value=done;
+    progressText.textContent=`${done} / ${active.length}`;
+
+    if(d>0) await sleep(d*1000);
   }
 }
 
