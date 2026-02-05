@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Hive Batch Upvote</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@hiveio/hive-js/dist/hive.min.js"></script>
+<script>
+hive.api.setOptions({ url: 'https://api.hive.blog' });
+hive.config.set('address_prefix','STM');
+hive.config.set('chain_id','beeab0de00000000000000000000000000000000000000000000000000000000');
+</script>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+padding:16px;
+font-family:system-ui;
+background:#f4f4f4;
+}
+
+.container{
+max-width:480px;
+margin:auto;
+background:#fff;
+padding:18px;
+border-radius:12px;
+box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+
+h2{text-align:center}
+
+.tools-bar{
+display:flex;
+gap:8px;
+margin-bottom:12px;
+}
+
+.tool-btn{
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+font-weight:600;
+cursor:pointer;
+}
+
+.export{background:#e3f2fd}
+.import{background:#e8f5e9}
+.selectall{background:#fff3cd}
+
+input{
+width:100%;
+padding:12px;
+margin-top:6px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+.add-btn{
+margin-top:12px;
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+background:#4caf50;
+color:white;
+font-weight:700;
+cursor:pointer;
+}
+
+/* LIST SCROLL */
+.accountList{
+max-height:220px;
+overflow:auto;
+margin-top:10px;
+}
+
+.account{
+display:flex;
+align-items:center;
+gap:8px;
+background:#f7f7f7;
+padding:8px;
+border-radius:8px;
+margin-bottom:6px;
+}
+
+.account-name{
+flex:1;
+font-weight:600;
+cursor:pointer;
+}
+
+.delete-btn{
+background:#ff5252;
+color:white;
+border:none;
+padding:6px 8px;
+border-radius:6px;
+cursor:pointer;
+font-size:12px;
+}
+
+.vote-btn{
+margin-top:14px;
+width:100%;
+padding:16px;
+background:#ff5722;
+color:white;
+border:none;
+border-radius:12px;
+font-weight:800;
+cursor:pointer;
+}
+
+.progress{
+width:100%;
+height:10px;
+background:#ddd;
+border-radius:6px;
+margin-top:12px;
+overflow:hidden;
+}
+
+.progress-bar{
+height:100%;
+width:0%;
+background:#4caf50;
+}
+
+.note{
+font-size:12px;
+text-align:center;
+margin-top:8px;
+color:#666;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Hive Batch Upvote</h2>
+
+<div class="tools-bar">
+<button class="tool-btn export" onclick="exportAccounts()">Export</button>
+<button class="tool-btn import" onclick="importFile.click()">Import</button>
+<button class="tool-btn selectall" onclick="toggleAll()">Toggle All</button>
+<input type="file" id="importFile" hidden onchange="importAccounts(event)">
+</div>
+
+<input id="username" placeholder="Username">
+<input id="postingKey" placeholder="Posting Key">
+
+<button class="add-btn" onclick="addAccount()">Tambah Akun</button>
+
+<div id="accountList" class="accountList"></div>
+
+<input id="postLink" placeholder="Link Post Hive">
+
+<button class="vote-btn" onclick="voteAll()">Vote Semua Akun</button>
+
+<div class="progress">
+<div id="progressBar" class="progress-bar"></div>
+</div>
+
+<div id="globalStatus" class="note"></div>
+
+</div>
+
+<script>
+
+let accounts = JSON.parse(localStorage.getItem('hive_accounts')||'[]')
+.map(a=>({enabled:true,...a}));
+
+const DELAY=3000;
+
+function save(){
+localStorage.setItem('hive_accounts',JSON.stringify(accounts));
+}
+
+function render(){
+accountList.innerHTML='';
+
+accounts.forEach((a,i)=>{
+accountList.innerHTML+=`
+<div class="account">
+
+<input type="checkbox"
+${a.enabled?'checked':''}
+onchange="toggleAccount(${i},this.checked)">
+
+<div class="account-name"
+onclick="editAccount(${i})">
+@${a.username}
+</div>
+
+<button class="delete-btn"
+onclick="deleteAccount(${i})">Del</button>
+
+</div>`;
+});
+}
+
+function addAccount(){
+
+let user=username.value.trim().toLowerCase();
+let key=postingKey.value.trim();
+
+if(!user||!key)return alert("Isi data");
+
+if(accounts.some(a=>a.username===user))
+return alert("Akun sudah ada");
+
+accounts.push({username:user,key,enabled:true});
+save();render();
+
+username.value='';
+postingKey.value='';
+}
+
+function deleteAccount(i){
+if(!confirm("Hapus akun?"))return;
+accounts.splice(i,1);
+save();render();
+}
+
+function editAccount(i){
+
+let a=accounts[i];
+
+let newUser=prompt("Edit username",a.username);
+if(!newUser)return;
+
+let newKey=prompt("Edit key",a.key);
+if(!newKey)return;
+
+accounts[i]={username:newUser,key:newKey,enabled:a.enabled};
+
+save();render();
+}
+
+function toggleAccount(i,state){
+accounts[i].enabled=state;
+save();
+}
+
+function toggleAll(){
+let state=!accounts.every(a=>a.enabled);
+accounts.forEach(a=>a.enabled=state);
+save();render();
+}
+
+function exportAccounts(){
+let blob=new Blob([JSON.stringify(accounts)],{type:'application/json'});
+let a=document.createElement('a');
+a.href=URL.createObjectURL(blob);
+a.download='hive-accounts.json';
+a.click();
+}
+
+function importAccounts(e){
+let r=new FileReader();
+r.onload=()=>{
+accounts=JSON.parse(r.result);
+save();render();
+};
+r.readAsText(e.target.files[0]);
+}
+
+function parseHiveLink(url){
+let m=url.match(/@([^/]+)\/([^/?#]+)/);
+return m?{author:m[1],permlink:m[2]}:null;
+}
+
+async function voteAll(){
+
+let link=postLink.value.trim();
+let parsed=parseHiveLink(link);
+
+if(!parsed)return alert("Link tidak valid");
+
+let selected=accounts
+.map((a,i)=>a.enabled?{acc:a,index:i}:null)
+.filter(Boolean);
+
+if(!selected.length)return alert("Tidak ada akun aktif");
+
+let done=0;
+progressBar.style.width="0%";
+globalStatus.textContent="broadcasting...";
+
+for(let item of selected){
+
+let acc=item.acc;
+let i=item.index;
+
+await new Promise(res=>{
+hive.broadcast.vote(
+acc.key,
+acc.username,
+parsed.author,
+parsed.permlink,
+10000,
+(err)=>{
+done++;
+progressBar.style.width=
+Math.round(done/selected.length*100)+"%";
+setTimeout(res,DELAY);
+});
+});
+}
+
+globalStatus.textContent="done";
+}
+
+render();
+
+</script>
+
+</body>
+</html>
