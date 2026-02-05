@@ -7,9 +7,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@hiveio/hive-js/dist/hive.min.js"></script>
 <script>
-  hive.api.setOptions({ url: 'https://api.hive.blog' });
-  hive.config.set('address_prefix','STM');
-  hive.config.set('chain_id','beeab0de00000000000000000000000000000000000000000000000000000000');
+hive.api.setOptions({ url: 'https://api.hive.blog' });
+hive.config.set('address_prefix','STM');
+hive.config.set('chain_id','beeab0de00000000000000000000000000000000000000000000000000000000');
 </script>
 
 <style>
@@ -118,7 +118,6 @@ input[type=text], input[type=password] {
   cursor: pointer;
 }
 
-/* PROGRESS */
 .progress-wrap {
   margin-top: 14px;
 }
@@ -150,50 +149,53 @@ input[type=text], input[type=password] {
 <body>
 
 <div class="container">
-  <h2>Hive Batch Upvote</h2>
+<h2>Hive Batch Upvote</h2>
 
-  <div class="tools-bar">
-    <button class="tool-btn export" onclick="exportAccounts()">Export</button>
-    <button class="tool-btn import" onclick="document.getElementById('importFile').click()">Import</button>
-    <input type="file" id="importFile" hidden onchange="importAccounts(event)">
-  </div>
+<div class="tools-bar">
+<button class="tool-btn export" onclick="exportAccounts()">Export</button>
+<button class="tool-btn import" onclick="document.getElementById('importFile').click()">Import</button>
+<input type="file" id="importFile" hidden onchange="importAccounts(event)">
+</div>
 
-  <label>Username</label>
-  <input id="username" type="text">
+<label>Username</label>
+<input id="username" type="text">
 
-  <label>Posting Private Key</label>
-  <input id="postingKey" type="password">
+<label>Posting Private Key</label>
+<input id="postingKey" type="password">
 
-  <button class="add-btn" onclick="addAccount()">Tambah Akun</button>
+<button class="add-btn" onclick="addAccount()">Tambah Akun</button>
 
-  <div id="accountList"></div>
+<div id="accountList"></div>
 
-  <label>Link Post Hive</label>
-  <input id="postLink" type="text">
+<label>Link Post Hive</label>
+<input id="postLink" type="text">
 
-  <button class="vote-btn" onclick="voteAll()">Vote Semua Akun</button>
+<button class="vote-btn" onclick="voteAll()">Vote Semua Akun</button>
 
-  <div class="progress-wrap">
-    <div class="progress">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-    <div id="globalStatus" class="note"></div>
-  </div>
+<div class="progress-wrap">
+<div class="progress">
+<div class="progress-bar" id="progressBar"></div>
+</div>
+<div id="globalStatus" class="note"></div>
+</div>
 
-  <div class="note">Delay antar akun: ±3 detik</div>
+<div class="note">Delay antar akun: ±3 detik</div>
 </div>
 
 <script>
+
 let accounts = JSON.parse(localStorage.getItem('hive_accounts') || '[]');
 const DELAY = 3000;
 
-function save(){ localStorage.setItem('hive_accounts', JSON.stringify(accounts)); }
+function save(){
+  localStorage.setItem('hive_accounts', JSON.stringify(accounts));
+}
 
 function render(){
-  const list = document.getElementById('accountList');
-  list.innerHTML = '';
+  accountList.innerHTML = '';
+
   accounts.forEach((a,i)=>{
-    list.innerHTML += `
+    accountList.innerHTML += `
       <div class="account">
         <input type="checkbox" checked data-i="${i}">
         <div class="account-name">@${a.username}</div>
@@ -203,60 +205,113 @@ function render(){
 }
 
 function addAccount(){
-  if(!username.value || !postingKey.value) return;
-  accounts.push({username: username.value, key: postingKey.value});
-  save(); render();
-  username.value=''; postingKey.value='';
+
+  const user = username.value.trim();
+  const key = postingKey.value.trim();
+
+  if(!user || !key){
+    alert("Isi username & key");
+    return;
+  }
+
+  accounts.push({username:user, key:key});
+  save();
+  render();
+
+  username.value='';
+  postingKey.value='';
 }
 
 function exportAccounts(){
-  const b = new Blob([JSON.stringify(accounts)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify(accounts)], {type:'application/json'});
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(b);
+  a.href = URL.createObjectURL(blob);
   a.download = 'hive-accounts.json';
   a.click();
 }
 
 function importAccounts(e){
-  const r = new FileReader();
-  r.onload = ()=>{ accounts = JSON.parse(r.result); save(); render(); };
-  r.readAsText(e.target.files[0]);
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      accounts = JSON.parse(reader.result);
+      save();
+      render();
+    }catch{
+      alert("File tidak valid");
+    }
+  };
+  reader.readAsText(e.target.files[0]);
 }
 
 async function voteAll(){
-  const link = postLink.value.trim();
-  if(!link) return;
 
+  const link = postLink.value.trim();
+  if(!link){
+    alert("Link kosong");
+    return;
+  }
+
+  /* parsing stabil */
   const parts = link.split('/');
+  if(parts.length < 6){
+    alert("Link tidak valid");
+    return;
+  }
+
   const author = parts[4].replace('@','');
   const permlink = parts[5];
 
   const selected = [...document.querySelectorAll('.account input:checked')];
+
+  if(selected.length === 0){
+    alert("Tidak ada akun dipilih");
+    return;
+  }
+
   let done = 0;
-  document.getElementById('globalStatus').textContent = 'broadcasting...';
+
+  globalStatus.textContent = "broadcasting...";
+  progressBar.style.width = "0%";
 
   for(const cb of selected){
+
     const i = cb.dataset.i;
     const acc = accounts[i];
-    document.getElementById(`st-${i}`).textContent = 'broadcasting';
+
+    document.getElementById(`st-${i}`).textContent = "broadcasting";
 
     await new Promise(res=>{
       hive.broadcast.vote(
-        acc.key, acc.username, author, permlink, 10000,
-        (err)=>{
-          document.getElementById(`st-${i}`).textContent = err ? 'failed' : 'success';
+        acc.key,
+        acc.username,
+        author,
+        permlink,
+        10000,
+        function(err,result){
+
+          console.log(err,result);
+
+          document.getElementById(`st-${i}`).textContent =
+            err ? "failed" : "success";
+
           done++;
-          document.getElementById('progressBar').style.width =
-            Math.round(done/selected.length*100) + '%';
+
+          progressBar.style.width =
+            Math.round(done/selected.length*100)+"%";
+
           setTimeout(res, DELAY);
         }
       );
     });
+
   }
-  document.getElementById('globalStatus').textContent = 'done';
+
+  globalStatus.textContent = "done";
 }
 
 render();
+
 </script>
 
 </body>
