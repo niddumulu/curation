@@ -1,206 +1,138 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hive Curation Tool</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@hiveio/hive-js/dist/hive.min.js"></script>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hive Upvote Tool</title>
 
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background-color: #f8f9fa;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+<script src="https://cdn.jsdelivr.net/npm/@hiveio/hive-js/dist/hive.min.js"></script>
 
-    .container {
-      width: 100%;
-      max-width: 600px;
-      margin: 20px;
-      padding: 30px;
-      background: #ffffff;
-      border-radius: 20px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    }
+<script>
+  hive.api.setOptions({ url: 'https://api.hive.blog' });
+</script>
 
-    h1 {
-      text-align: center;
-      color: #9D4242;
-      font-size: 24px;
-      margin-bottom: 30px;
-    }
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f3f3f3;
+    padding: 15px;
+  }
 
-    label {
-      font-weight: 600;
-      margin-bottom: 8px;
-      display: block;
-      color: #444;
-    }
+  .box {
+    max-width: 420px;
+    margin: auto;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  }
 
-    input[type="text"], input[type="number"], input[type="file"], button {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 20px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-      background-color: #f1f1f1;
-    }
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
 
-    button {
-      background-color: #9D4242;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
+  input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
 
-    button:hover {
-      background-color: #7c3333;
-    }
+  button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    background: #e53935;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
 
-    #log {
-      margin-top: 20px;
-      background: #f1f1f1;
-      padding: 10px;
-      border-radius: 10px;
-      height: 200px;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 14px;
-      color: #333;
-    }
+  button:active {
+    opacity: 0.8;
+  }
 
-    /* Responsiveness for smaller screens */
-    @media (max-width: 768px) {
-      h1 {
-        font-size: 20px;
-      }
+  .status {
+    margin-top: 12px;
+    font-size: 13px;
+    text-align: center;
+  }
 
-      .container {
-        padding: 20px;
-      }
-
-      input[type="text"], input[type="number"], input[type="file"], button {
-        font-size: 14px;
-        padding: 10px;
-      }
-
-      #log {
-        height: 150px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      h1 {
-        font-size: 18px;
-      }
-
-      .container {
-        padding: 15px;
-      }
-
-      input[type="text"], input[type="number"], input[type="file"], button {
-        font-size: 12px;
-        padding: 8px;
-      }
-
-      #log {
-        height: 120px;
-      }
-    }
-  </style>
-  <script>
-    hive.api.setOptions({ url: 'https://anyx.io' });
-    hive.config.set('address_prefix', 'STM');
-    hive.config.set('chain_id', 'beeab0de00000000000000000000000000000000000000000000000000000000');
-    hive.config.set('alternative_api_endpoints', ['https://api.hive.blog', 'https://anyx.io']);
-  </script>
+  .loading { color: #ff9800; }
+  .success { color: #2e7d32; }
+  .error   { color: #c62828; }
+</style>
 </head>
+
 <body>
 
-<div class="container">
-  <h1>Hive Curation Tool</h1>
+<div class="box">
+  <h2>Hive Upvote</h2>
 
-  <label for="permlink">Post Link</label>
-  <input type="text" id="permlink" placeholder="https://peakd.com/@author/permlink">
+  <input id="username" type="text" placeholder="Username">
+  <input id="postingKey" type="password" placeholder="Posting Key">
+  <input id="postLink" type="text" placeholder="Link Post Hive">
 
-  <label for="weight">Vote Weight (0-100)</label>
-  <input type="number" id="weight" placeholder="e.g. 50">
+  <button onclick="upvote()">Upvote</button>
 
-  <label for="jsonFile">Load akun dari file JSON</label>
-  <input type="file" id="jsonFile" accept=".json">
-
-  <button onclick="curate()">Mulai Vote</button>
-
-  <div id="log"></div>
+  <div id="status" class="status"></div>
 </div>
 
 <script>
-  function log(message) {
-    const logBox = document.getElementById('log');
-    logBox.innerHTML += message + "<br>";
-    logBox.scrollTop = logBox.scrollHeight;
+  // Load saved data
+  document.getElementById('username').value = localStorage.getItem('hive_user') || '';
+  document.getElementById('postingKey').value = localStorage.getItem('hive_key') || '';
+
+  function setStatus(text, cls) {
+    const el = document.getElementById('status');
+    el.textContent = text;
+    el.className = 'status ' + cls;
   }
 
-  let votersList = [];
+  function upvote() {
+    const voter = document.getElementById('username').value.trim();
+    const wif   = document.getElementById('postingKey').value.trim();
+    const link  = document.getElementById('postLink').value.trim();
 
-  document.getElementById('jsonFile').addEventListener('change', function (event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      try {
-        const data = JSON.parse(e.target.result);
-        votersList = data;
-        log(`✅ ${data.length} akun berhasil dimuat dari file.`);
-      } catch (err) {
-        alert("❌ Gagal membaca file JSON: " + err.message);
-      }
-    };
-    reader.readAsText(file);
-  });
-
-  function curate() {
-    const link = document.getElementById('permlink').value.trim();
-    const weightInput = parseFloat(document.getElementById('weight').value);
-
-    if (!link || isNaN(weightInput) || votersList.length === 0) {
-      alert("Mohon isi semua data dengan benar dan pastikan file akun sudah dimuat.");
+    if (!voter || !wif || !link) {
+      setStatus('Semua kolom wajib diisi', 'error');
       return;
     }
 
-    const pathArray = link.split('/');
-    if (pathArray.length < 6) {
-      alert("Link post tidak valid!");
+    // Save locally
+    localStorage.setItem('hive_user', voter);
+    localStorage.setItem('hive_key', wif);
+
+    // Parse link
+    const parts = link.split('/');
+    if (parts.length < 6) {
+      setStatus('Link Hive tidak valid', 'error');
       return;
     }
 
-    const permlink = pathArray[5];
-    const author = pathArray[4].replace('@', '');
-    const weight = Math.round(weightInput * 100);
+    const author = parts[4].replace('@', '');
+    const permlink = parts[5];
 
-    votersList.forEach((account, index) => {
-      const voter = account.username;
-      const wif = account.wif;
+    setStatus('broadcasting...', 'loading');
 
-      hive.broadcast.vote(wif, voter, author, permlink, weight, function (err, result) {
+    hive.broadcast.vote(
+      wif,
+      voter,
+      author,
+      permlink,
+      10000, // 100%
+      function (err, result) {
         if (err) {
-          log(`❌ ${voter} gagal vote: ${err.message}`);
+          setStatus('failed: ' + err.message, 'error');
         } else {
-          log(`✅ ${voter} berhasil vote`);
+          setStatus('success ✓ upvote sent', 'success');
         }
-      });
-    });
+      }
+    );
   }
 </script>
 
