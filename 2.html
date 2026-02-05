@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hive Upvote Tool</title>
+<title>Hive Batch Upvote Tool</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@hiveio/hive-js/dist/hive.min.js"></script>
-
 <script>
   hive.api.setOptions({ url: 'https://api.hive.blog' });
   hive.config.set('address_prefix','STM');
@@ -14,136 +13,192 @@
 </script>
 
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f2f2f2;
-    margin: 0;
-    padding: 16px;
-  }
-
-  .container {
-    max-width: 480px;
-    margin: auto;
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  }
-
-  h2 {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-
-  label {
-    font-size: 14px;
-    font-weight: bold;
-    display: block;
-    margin-top: 12px;
-  }
-
-  input {
-    width: 100%;
-    padding: 12px;
-    margin-top: 6px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-
-  button {
-    width: 100%;
-    margin-top: 20px;
-    padding: 14px;
-    font-size: 16px;
-    font-weight: bold;
-    border: none;
-    border-radius: 6px;
-    background: #4CAF50;
-    color: white;
-    cursor: pointer;
-  }
-
-  button:hover {
-    background: #43a047;
-  }
-
-  .note {
-    font-size: 12px;
-    color: #555;
-    margin-top: 15px;
-    text-align: center;
-  }
+body{
+  font-family: Arial, sans-serif;
+  background:#f2f2f2;
+  padding:16px;
+}
+.container{
+  max-width:500px;
+  margin:auto;
+  background:#fff;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,.15);
+}
+h2{
+  text-align:center;
+}
+label{
+  font-size:14px;
+  font-weight:bold;
+  display:block;
+  margin-top:12px;
+}
+input{
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+button{
+  width:100%;
+  padding:14px;
+  margin-top:16px;
+  font-size:16px;
+  font-weight:bold;
+  border:none;
+  border-radius:6px;
+  background:#4CAF50;
+  color:#fff;
+  cursor:pointer;
+}
+button.secondary{
+  background:#2196F3;
+}
+button.danger{
+  background:#f44336;
+}
+.account{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:8px;
+  padding:6px 0;
+  border-bottom:1px solid #eee;
+  font-size:14px;
+}
+.status{
+  font-size:12px;
+}
+.note{
+  font-size:12px;
+  color:#555;
+  margin-top:12px;
+  text-align:center;
+}
 </style>
 </head>
 
 <body>
-
 <div class="container">
-  <h2>Hive Upvote Tool</h2>
 
-  <label>Username</label>
-  <input type="text" id="username" placeholder="username">
+<h2>Hive Batch Upvote Tool</h2>
 
-  <label>Posting Private Key</label>
-  <input type="password" id="postingKey" placeholder="5K...">
+<!-- ADD ACCOUNT -->
+<label>Username</label>
+<input id="newUser" placeholder="username">
 
-  <label>Link Post Hive</label>
-  <input type="text" id="postLink" placeholder="https://ecency.com/@author/permlink">
+<label>Posting Private Key</label>
+<input id="newKey" type="password" placeholder="5K...">
 
-  <button onclick="doVote()">Upvote 100%</button>
+<button class="secondary" onclick="addAccount()">Tambah Akun</button>
 
-  <div class="note">
-    Data username & key disimpan di browser (local).
-  </div>
+<!-- ACCOUNT LIST -->
+<h3>Akun Tersimpan</h3>
+<div id="accountList"></div>
+
+<button class="danger" onclick="clearAccounts()">Hapus Semua Akun</button>
+
+<hr>
+
+<!-- VOTE -->
+<label>Link Post Hive</label>
+<input id="postLink" placeholder="https://ecency.com/@author/permlink">
+
+<button onclick="startBatchVote()">Vote dengan Semua Akun</button>
+
+<div class="note">
+Posting key & username disimpan lokal di browser ini.
+</div>
+
 </div>
 
 <script>
-  // Load saved data
-  document.getElementById('username').value = localStorage.getItem('hive_username') || '';
-  document.getElementById('postingKey').value = localStorage.getItem('hive_posting_key') || '';
+let accounts = JSON.parse(localStorage.getItem("hive_accounts")) || [];
 
-  function doVote(){
-    const username = document.getElementById('username').value.trim();
-    const postingKey = document.getElementById('postingKey').value.trim();
-    const link = document.getElementById('postLink').value.trim();
+function saveAccounts(){
+  localStorage.setItem("hive_accounts", JSON.stringify(accounts));
+}
 
-    if(!username || !postingKey || !link){
-      alert("Semua kolom wajib diisi");
-      return;
-    }
+function renderAccounts(){
+  const list = document.getElementById("accountList");
+  list.innerHTML = "";
+  accounts.forEach((acc, i) => {
+    const div = document.createElement("div");
+    div.className = "account";
+    div.innerHTML = `
+      <label>
+        <input type="checkbox" ${acc.enabled ? "checked" : ""} onchange="toggleAccount(${i})">
+        @${acc.username}
+      </label>
+      <span class="status" id="status-${i}">Idle</span>
+    `;
+    list.appendChild(div);
+  });
+}
 
-    // Save to localStorage
-    localStorage.setItem('hive_username', username);
-    localStorage.setItem('hive_posting_key', postingKey);
+function addAccount(){
+  const u = document.getElementById("newUser").value.trim();
+  const k = document.getElementById("newKey").value.trim();
+  if(!u || !k) return;
 
-    // Parse link
-    const parts = link.split('/');
-    if(parts.length < 6){
-      alert("Link Hive tidak valid");
-      return;
-    }
+  accounts.push({username:u, postingKey:k, enabled:true});
+  saveAccounts();
+  renderAccounts();
 
-    const author = parts[4].replace('@','');
-    const permlink = parts[5];
+  document.getElementById("newUser").value="";
+  document.getElementById("newKey").value="";
+}
 
-    hive.broadcast.vote(
-      postingKey,
-      username,
-      author,
-      permlink,
-      10000, // 100%
-      function(err, result){
-        console.log(err, result);
-        if(err){
-          alert("Gagal: " + JSON.stringify(err));
-        } else {
-          alert("Upvote berhasil!");
+function toggleAccount(i){
+  accounts[i].enabled = !accounts[i].enabled;
+  saveAccounts();
+}
+
+function clearAccounts(){
+  accounts = [];
+  saveAccounts();
+  renderAccounts();
+}
+
+function updateStatus(i,text){
+  const el = document.getElementById("status-"+i);
+  if(el) el.textContent = text;
+}
+
+async function startBatchVote(){
+  const link = document.getElementById("postLink").value.trim();
+  const p = link.split("/");
+  if(p.length < 6) return;
+
+  const author = p[4].replace("@","");
+  const permlink = p[5];
+
+  for(let i=0;i<accounts.length;i++){
+    const acc = accounts[i];
+    if(!acc.enabled) continue;
+
+    updateStatus(i,"broadcasting… ⏳");
+
+    await new Promise(resolve=>{
+      hive.broadcast.vote(
+        acc.postingKey,
+        acc.username,
+        author,
+        permlink,
+        10000,
+        (err)=>{
+          updateStatus(i, err ? "failed ❌" : "success ✅");
+          resolve();
         }
-      }
-    );
+      );
+    });
   }
+}
+
+renderAccounts();
 </script>
 
 </body>
