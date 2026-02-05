@@ -9,22 +9,25 @@
 
 <script>
   hive.api.setOptions({ url: 'https://api.hive.blog' });
+  hive.config.set('address_prefix','STM');
+  hive.config.set('chain_id','beeab0de00000000000000000000000000000000000000000000000000000000');
 </script>
 
 <style>
   body {
     font-family: Arial, sans-serif;
-    background: #f3f3f3;
-    padding: 15px;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 16px;
   }
 
-  .box {
-    max-width: 420px;
+  .container {
+    max-width: 480px;
     margin: auto;
     background: #ffffff;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
   }
 
   h2 {
@@ -32,104 +35,132 @@
     margin-bottom: 20px;
   }
 
+  label {
+    font-size: 14px;
+    font-weight: bold;
+    display: block;
+    margin-top: 12px;
+  }
+
   input {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 12px;
-    font-size: 15px;
+    padding: 12px;
+    margin-top: 6px;
+    font-size: 14px;
+    border-radius: 6px;
     border: 1px solid #ccc;
-    border-radius: 5px;
+    box-sizing: border-box;
   }
 
   button {
     width: 100%;
-    padding: 12px;
+    margin-top: 20px;
+    padding: 14px;
     font-size: 16px;
-    background: #e53935;
-    color: #fff;
+    font-weight: bold;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
+    background: #4CAF50;
+    color: white;
     cursor: pointer;
   }
 
-  button:active {
-    opacity: 0.8;
+  button:hover {
+    background: #43a047;
   }
 
+  /* ⬇️ tambahan kecil untuk status */
   .status {
     margin-top: 12px;
     font-size: 13px;
     text-align: center;
   }
-
   .loading { color: #ff9800; }
   .success { color: #2e7d32; }
   .error   { color: #c62828; }
+
+  .note {
+    font-size: 12px;
+    color: #555;
+    margin-top: 15px;
+    text-align: center;
+  }
 </style>
 </head>
 
 <body>
 
-<div class="box">
-  <h2>Hive Upvote</h2>
+<div class="container">
+  <h2>Hive Upvote Tool</h2>
 
-  <input id="username" type="text" placeholder="Username">
-  <input id="postingKey" type="password" placeholder="Posting Key">
-  <input id="postLink" type="text" placeholder="Link Post Hive">
+  <label>Username</label>
+  <input type="text" id="username" placeholder="username">
 
-  <button onclick="upvote()">Upvote</button>
+  <label>Posting Private Key</label>
+  <input type="password" id="postingKey" placeholder="5K...">
 
+  <label>Link Post Hive</label>
+  <input type="text" id="postLink" placeholder="https://ecency.com/@author/permlink">
+
+  <button onclick="doVote()">Upvote 100%</button>
+
+  <!-- ⬇️ status realtime -->
   <div id="status" class="status"></div>
+
+  <div class="note">
+    Data username & key disimpan di browser (local).
+  </div>
 </div>
 
 <script>
   // Load saved data
-  document.getElementById('username').value = localStorage.getItem('hive_user') || '';
-  document.getElementById('postingKey').value = localStorage.getItem('hive_key') || '';
+  document.getElementById('username').value = localStorage.getItem('hive_username') || '';
+  document.getElementById('postingKey').value = localStorage.getItem('hive_posting_key') || '';
 
-  function setStatus(text, cls) {
+  function setStatus(text, cls){
     const el = document.getElementById('status');
     el.textContent = text;
     el.className = 'status ' + cls;
   }
 
-  function upvote() {
-    const voter = document.getElementById('username').value.trim();
-    const wif   = document.getElementById('postingKey').value.trim();
-    const link  = document.getElementById('postLink').value.trim();
+  function doVote(){
+    const username = document.getElementById('username').value.trim();
+    const postingKey = document.getElementById('postingKey').value.trim();
+    const link = document.getElementById('postLink').value.trim();
 
-    if (!voter || !wif || !link) {
-      setStatus('Semua kolom wajib diisi', 'error');
+    if(!username || !postingKey || !link){
+      setStatus("Semua kolom wajib diisi", "error");
       return;
     }
 
-    // Save locally
-    localStorage.setItem('hive_user', voter);
-    localStorage.setItem('hive_key', wif);
+    // Save to localStorage
+    localStorage.setItem('hive_username', username);
+    localStorage.setItem('hive_posting_key', postingKey);
 
     // Parse link
     const parts = link.split('/');
-    if (parts.length < 6) {
-      setStatus('Link Hive tidak valid', 'error');
+    if(parts.length < 6){
+      setStatus("Link Hive tidak valid", "error");
       return;
     }
 
-    const author = parts[4].replace('@', '');
+    const author = parts[4].replace('@','');
     const permlink = parts[5];
 
-    setStatus('broadcasting...', 'loading');
+    setStatus("broadcasting...", "loading");
 
     hive.broadcast.vote(
-      wif,
-      voter,
+      postingKey,
+      username,
       author,
       permlink,
-      10000, // 100%
-      function (err, result) {
-        if (err) {
-          setStatus('failed: ' + err.message, 'error');
+      10000,
+      function(err, result){
+        console.log(err, result);
+        if(err){
+          setStatus("failed: " + err.message, "error");
         } else {
-          setStatus('success ✓ upvote sent', 'success');
+          setStatus("success ✓ upvote sent", "success");
         }
       }
     );
